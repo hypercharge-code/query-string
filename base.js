@@ -1,136 +1,142 @@
-import decodeComponent from 'decode-uri-component';
-import splitOnFirst from 'split-on-first';
-import {includeKeys} from 'filter-obj';
+import decodeComponent from "decode-uri-component";
+import splitOnFirst from "split-on-first";
+import { includeKeys } from "filter-obj";
 
-const isNullOrUndefined = value => value === null || value === undefined;
+const isNullOrUndefined = (value) => value === null || value === undefined;
 
 // eslint-disable-next-line unicorn/prefer-code-point
-const strictUriEncode = string => encodeURIComponent(string).replaceAll(/[!'()*]/g, x => `%${x.charCodeAt(0).toString(16).toUpperCase()}`);
+const strictUriEncode = (string) =>
+	encodeURIComponent(string).replaceAll(
+		/[!'()*]/g,
+		(x) => `%${x.charCodeAt(0).toString(16).toUpperCase()}`,
+	);
 
-const encodeFragmentIdentifier = Symbol('encodeFragmentIdentifier');
+const encodeFragmentIdentifier = Symbol("encodeFragmentIdentifier");
 
 function encoderForArrayFormat(options) {
 	switch (options.arrayFormat) {
-		case 'index': {
-			return key => (result, value) => {
+		case "index": {
+			return (key) => (result, value) => {
 				const index = result.length;
 
 				if (
-					value === undefined
-					|| (options.skipNull && value === null)
-					|| (options.skipEmptyString && value === '')
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === "")
 				) {
 					return result;
 				}
 
 				if (value === null) {
-					return [
-						...result, [encode(key, options), '[', index, ']'].join(''),
-					];
+					return [...result, [encode(key, options), "[", index, "]"].join("")];
 				}
 
 				return [
 					...result,
-					[encode(key, options), '[', encode(index, options), ']=', encode(value, options)].join(''),
+					[
+						encode(key, options),
+						"[",
+						encode(index, options),
+						"]=",
+						encode(value, options),
+					].join(""),
 				];
 			};
 		}
 
-		case 'bracket': {
-			return key => (result, value) => {
+		case "bracket": {
+			return (key) => (result, value) => {
 				if (
-					value === undefined
-					|| (options.skipNull && value === null)
-					|| (options.skipEmptyString && value === '')
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === "")
 				) {
 					return result;
 				}
 
 				if (value === null) {
-					return [
-						...result,
-						[encode(key, options), '[]'].join(''),
-					];
+					return [...result, [encode(key, options), "[]"].join("")];
 				}
 
 				return [
 					...result,
-					[encode(key, options), '[]=', encode(value, options)].join(''),
+					[encode(key, options), "[]=", encode(value, options)].join(""),
 				];
 			};
 		}
 
-		case 'colon-list-separator': {
-			return key => (result, value) => {
+		case "colon-list-separator": {
+			return (key) => (result, value) => {
 				if (
-					value === undefined
-					|| (options.skipNull && value === null)
-					|| (options.skipEmptyString && value === '')
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === "")
 				) {
 					return result;
 				}
 
 				if (value === null) {
-					return [
-						...result,
-						[encode(key, options), ':list='].join(''),
-					];
+					return [...result, [encode(key, options), ":list="].join("")];
 				}
 
 				return [
 					...result,
-					[encode(key, options), ':list=', encode(value, options)].join(''),
+					[encode(key, options), ":list=", encode(value, options)].join(""),
 				];
 			};
 		}
 
-		case 'comma':
-		case 'separator':
-		case 'bracket-separator': {
-			const keyValueSeparator = options.arrayFormat === 'bracket-separator'
-				? '[]='
-				: '=';
+		case "comma":
+		case "separator":
+		case "bracket-separator": {
+			const keyValueSeparator =
+				options.arrayFormat === "bracket-separator" ? "[]=" : "=";
 
-			return key => (result, value) => {
+			return (key) => (result, value) => {
 				if (
-					value === undefined
-					|| (options.skipNull && value === null)
-					|| (options.skipEmptyString && value === '')
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === "")
 				) {
 					return result;
 				}
 
 				// Translate null to an empty string so that it doesn't serialize as 'null'
-				value = value === null ? '' : value;
+				value = value === null ? "" : value;
 
 				if (result.length === 0) {
-					return [[encode(key, options), keyValueSeparator, encode(value, options)].join('')];
+					return [
+						[
+							encode(key, options),
+							keyValueSeparator,
+							encode(value, options),
+						].join(""),
+					];
 				}
 
-				return [[result, encode(value, options)].join(options.arrayFormatSeparator)];
+				return [
+					[result, encode(value, options)].join(options.arrayFormatSeparator),
+				];
 			};
 		}
 
 		default: {
-			return key => (result, value) => {
+			return (key) => (result, value) => {
 				if (
-					value === undefined
-					|| (options.skipNull && value === null)
-					|| (options.skipEmptyString && value === '')
+					value === undefined ||
+					(options.skipNull && value === null) ||
+					(options.skipEmptyString && value === "")
 				) {
 					return result;
 				}
 
 				if (value === null) {
-					return [
-						...result,
-						encode(key, options),
-					];
+					return [...result, encode(key, options)];
 				}
 
 				return [
 					...result,
-					[encode(key, options), '=', encode(value, options)].join(''),
+					[encode(key, options), "=", encode(value, options)].join(""),
 				];
 			};
 		}
@@ -141,11 +147,11 @@ function parserForArrayFormat(options) {
 	let result;
 
 	switch (options.arrayFormat) {
-		case 'index': {
+		case "index": {
 			return (key, value, accumulator) => {
 				result = /\[(\d*)]$/.exec(key);
 
-				key = key.replace(/\[\d*]$/, '');
+				key = key.replace(/\[\d*]$/, "");
 
 				if (!result) {
 					accumulator[key] = value;
@@ -160,10 +166,10 @@ function parserForArrayFormat(options) {
 			};
 		}
 
-		case 'bracket': {
+		case "bracket": {
 			return (key, value, accumulator) => {
 				result = /(\[])$/.exec(key);
-				key = key.replace(/\[]$/, '');
+				key = key.replace(/\[]$/, "");
 
 				if (!result) {
 					accumulator[key] = value;
@@ -179,10 +185,10 @@ function parserForArrayFormat(options) {
 			};
 		}
 
-		case 'colon-list-separator': {
+		case "colon-list-separator": {
 			return (key, value, accumulator) => {
 				result = /(:list)$/.exec(key);
-				key = key.replace(/:list$/, '');
+				key = key.replace(/:list$/, "");
 
 				if (!result) {
 					accumulator[key] = value;
@@ -198,30 +204,50 @@ function parserForArrayFormat(options) {
 			};
 		}
 
-		case 'comma':
-		case 'separator': {
+		case "comma":
+		case "separator": {
 			return (key, value, accumulator) => {
-				const isArray = typeof value === 'string' && value.includes(options.arrayFormatSeparator);
-				const isEncodedArray = (typeof value === 'string' && !isArray && decode(value, options).includes(options.arrayFormatSeparator));
+				const isArray =
+					typeof value === "string" &&
+					value.includes(options.arrayFormatSeparator);
+				const isEncodedArray =
+					typeof value === "string" &&
+					!isArray &&
+					decode(value, options).includes(options.arrayFormatSeparator);
+
 				value = isEncodedArray ? decode(value, options) : value;
-				const newValue = isArray || isEncodedArray ? value.split(options.arrayFormatSeparator).map(item => decode(item, options)) : (value === null ? value : decode(value, options));
+
+				const shouldSplit =
+					isArray || (options.splitEncodedValues && isEncodedArray);
+
+				const newValue = shouldSplit
+					? value
+							.split(options.arrayFormatSeparator)
+							.map((item) => decode(item, options))
+					: value === null
+						? value
+						: decode(value, options);
+
 				accumulator[key] = newValue;
 			};
 		}
 
-		case 'bracket-separator': {
+		case "bracket-separator": {
 			return (key, value, accumulator) => {
 				const isArray = /(\[])$/.test(key);
-				key = key.replace(/\[]$/, '');
+				key = key.replace(/\[]$/, "");
 
 				if (!isArray) {
 					accumulator[key] = value ? decode(value, options) : value;
 					return;
 				}
 
-				const arrayValue = value === null
-					? []
-					: value.split(options.arrayFormatSeparator).map(item => decode(item, options));
+				const arrayValue =
+					value === null
+						? []
+						: value
+								.split(options.arrayFormatSeparator)
+								.map((item) => decode(item, options));
 
 				if (accumulator[key] === undefined) {
 					accumulator[key] = arrayValue;
@@ -246,8 +272,8 @@ function parserForArrayFormat(options) {
 }
 
 function validateArrayFormatSeparator(value) {
-	if (typeof value !== 'string' || value.length !== 1) {
-		throw new TypeError('arrayFormatSeparator must be single character string');
+	if (typeof value !== "string" || value.length !== 1) {
+		throw new TypeError("arrayFormatSeparator must be single character string");
 	}
 }
 
@@ -272,17 +298,17 @@ function keysSorter(input) {
 		return input.sort();
 	}
 
-	if (typeof input === 'object') {
+	if (typeof input === "object") {
 		return keysSorter(Object.keys(input))
 			.sort((a, b) => Number(a) - Number(b))
-			.map(key => input[key]);
+			.map((key) => input[key]);
 	}
 
 	return input;
 }
 
 function removeHash(input) {
-	const hashStart = input.indexOf('#');
+	const hashStart = input.indexOf("#");
 	if (hashStart !== -1) {
 		input = input.slice(0, hashStart);
 	}
@@ -291,8 +317,8 @@ function removeHash(input) {
 }
 
 function getHash(url) {
-	let hash = '';
-	const hashStart = url.indexOf('#');
+	let hash = "";
+	const hashStart = url.indexOf("#");
 	if (hashStart !== -1) {
 		hash = url.slice(hashStart);
 	}
@@ -301,10 +327,19 @@ function getHash(url) {
 }
 
 function parseValue(value, options) {
-	if (options.parseNumbers && !Number.isNaN(Number(value)) && (typeof value === 'string' && value.trim() !== '')) {
+	if (
+		options.parseNumbers &&
+		!Number.isNaN(Number(value)) &&
+		typeof value === "string" &&
+		value.trim() !== ""
+	) {
 		value = Number(value);
-	} else if (options.parseBooleans && value !== null && (value.toLowerCase() === 'true' || value.toLowerCase() === 'false')) {
-		value = value.toLowerCase() === 'true';
+	} else if (
+		options.parseBooleans &&
+		value !== null &&
+		(value.toLowerCase() === "true" || value.toLowerCase() === "false")
+	) {
+		value = value.toLowerCase() === "true";
 	}
 
 	return value;
@@ -312,9 +347,9 @@ function parseValue(value, options) {
 
 export function extract(input) {
 	input = removeHash(input);
-	const queryStart = input.indexOf('?');
+	const queryStart = input.indexOf("?");
 	if (queryStart === -1) {
-		return '';
+		return "";
 	}
 
 	return input.slice(queryStart + 1);
@@ -324,10 +359,11 @@ export function parse(query, options) {
 	options = {
 		decode: true,
 		sort: true,
-		arrayFormat: 'none',
-		arrayFormatSeparator: ',',
+		arrayFormat: "none",
+		arrayFormatSeparator: ",",
 		parseNumbers: false,
 		parseBooleans: false,
+		splitEncodedValues: true,
 		...options,
 	};
 
@@ -338,24 +374,26 @@ export function parse(query, options) {
 	// Create an object with no prototype
 	const returnValue = Object.create(null);
 
-	if (typeof query !== 'string') {
+	if (typeof query !== "string") {
 		return returnValue;
 	}
 
-	query = query.trim().replace(/^[?#&]/, '');
+	query = query.trim().replace(/^[?#&]/, "");
 
 	if (!query) {
 		return returnValue;
 	}
 
-	for (const parameter of query.split('&')) {
-		if (parameter === '') {
+	for (const parameter of query.split("&")) {
+		if (parameter === "") {
 			continue;
 		}
 
-		const parameter_ = options.decode ? parameter.replaceAll('+', ' ') : parameter;
+		const parameter_ = options.decode
+			? parameter.replaceAll("+", " ")
+			: parameter;
 
-		let [key, value] = splitOnFirst(parameter_, '=');
+		let [key, value] = splitOnFirst(parameter_, "=");
 
 		if (key === undefined) {
 			key = parameter_;
@@ -363,12 +401,19 @@ export function parse(query, options) {
 
 		// Missing `=` should be `null`:
 		// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
-		value = value === undefined ? null : (['comma', 'separator', 'bracket-separator'].includes(options.arrayFormat) ? value : decode(value, options));
+		value =
+			value === undefined
+				? null
+				: ["comma", "separator", "bracket-separator"].includes(
+							options.arrayFormat,
+					  )
+					? value
+					: decode(value, options);
 		formatter(decode(key, options), value, returnValue);
 	}
 
 	for (const [key, value] of Object.entries(returnValue)) {
-		if (typeof value === 'object' && value !== null) {
+		if (typeof value === "object" && value !== null) {
 			for (const [key2, value2] of Object.entries(value)) {
 				value[key2] = parseValue(value2, options);
 			}
@@ -383,32 +428,39 @@ export function parse(query, options) {
 
 	// TODO: Remove the use of `reduce`.
 	// eslint-disable-next-line unicorn/no-array-reduce
-	return (options.sort === true ? Object.keys(returnValue).sort() : Object.keys(returnValue).sort(options.sort)).reduce((result, key) => {
+	return (
+		options.sort === true
+			? Object.keys(returnValue).sort()
+			: Object.keys(returnValue).sort(options.sort)
+	).reduce((result, key) => {
 		const value = returnValue[key];
-		result[key] = Boolean(value) && typeof value === 'object' && !Array.isArray(value) ? keysSorter(value) : value;
+		result[key] =
+			Boolean(value) && typeof value === "object" && !Array.isArray(value)
+				? keysSorter(value)
+				: value;
 		return result;
 	}, Object.create(null));
 }
 
 export function stringify(object, options) {
 	if (!object) {
-		return '';
+		return "";
 	}
 
 	options = {
 		encode: true,
 		strict: true,
-		arrayFormat: 'none',
-		arrayFormatSeparator: ',',
+		arrayFormat: "none",
+		arrayFormatSeparator: ",",
+
 		...options,
 	};
 
 	validateArrayFormatSeparator(options.arrayFormatSeparator);
 
-	const shouldFilter = key => (
-		(options.skipNull && isNullOrUndefined(object[key]))
-		|| (options.skipEmptyString && object[key] === '')
-	);
+	const shouldFilter = (key) =>
+		(options.skipNull && isNullOrUndefined(object[key])) ||
+		(options.skipEmptyString && object[key] === "");
 
 	const formatter = encoderForArrayFormat(options);
 
@@ -426,29 +478,30 @@ export function stringify(object, options) {
 		keys.sort(options.sort);
 	}
 
-	return keys.map(key => {
-		const value = object[key];
+	return keys
+		.map((key) => {
+			const value = object[key];
 
-		if (value === undefined) {
-			return '';
-		}
-
-		if (value === null) {
-			return encode(key, options);
-		}
-
-		if (Array.isArray(value)) {
-			if (value.length === 0 && options.arrayFormat === 'bracket-separator') {
-				return encode(key, options) + '[]';
+			if (value === undefined) {
+				return "";
 			}
 
-			return value
-				.reduce(formatter(key), [])
-				.join('&');
-		}
+			if (value === null) {
+				return encode(key, options);
+			}
 
-		return encode(key, options) + '=' + encode(value, options);
-	}).filter(x => x.length > 0).join('&');
+			if (Array.isArray(value)) {
+				if (value.length === 0 && options.arrayFormat === "bracket-separator") {
+					return encode(key, options) + "[]";
+				}
+
+				return value.reduce(formatter(key), []).join("&");
+			}
+
+			return encode(key, options) + "=" + encode(value, options);
+		})
+		.filter((x) => x.length > 0)
+		.join("&");
 }
 
 export function parseUrl(url, options) {
@@ -457,16 +510,18 @@ export function parseUrl(url, options) {
 		...options,
 	};
 
-	let [url_, hash] = splitOnFirst(url, '#');
+	let [url_, hash] = splitOnFirst(url, "#");
 
 	if (url_ === undefined) {
 		url_ = url;
 	}
 
 	return {
-		url: url_?.split('?')?.[0] ?? '',
+		url: url_?.split("?")?.[0] ?? "",
 		query: parse(extract(url), options),
-		...(options && options.parseFragmentIdentifier && hash ? {fragmentIdentifier: decode(hash, options)} : {}),
+		...(options && options.parseFragmentIdentifier && hash
+			? { fragmentIdentifier: decode(hash, options) }
+			: {}),
 	};
 }
 
@@ -478,11 +533,11 @@ export function stringifyUrl(object, options) {
 		...options,
 	};
 
-	const url = removeHash(object.url).split('?')[0] || '';
+	const url = removeHash(object.url).split("?")[0] || "";
 	const queryFromUrl = extract(object.url);
 
 	const query = {
-		...parse(queryFromUrl, {sort: false}),
+		...parse(queryFromUrl, { sort: false }),
 		...object.query,
 	};
 
@@ -490,10 +545,12 @@ export function stringifyUrl(object, options) {
 	queryString &&= `?${queryString}`;
 
 	let hash = getHash(object.url);
-	if (typeof object.fragmentIdentifier === 'string') {
+	if (typeof object.fragmentIdentifier === "string") {
 		const urlObjectForFragmentEncode = new URL(url);
 		urlObjectForFragmentEncode.hash = object.fragmentIdentifier;
-		hash = options[encodeFragmentIdentifier] ? urlObjectForFragmentEncode.hash : `#${object.fragmentIdentifier}`;
+		hash = options[encodeFragmentIdentifier]
+			? urlObjectForFragmentEncode.hash
+			: `#${object.fragmentIdentifier}`;
 	}
 
 	return `${url}${queryString}${hash}`;
@@ -506,17 +563,22 @@ export function pick(input, filter, options) {
 		...options,
 	};
 
-	const {url, query, fragmentIdentifier} = parseUrl(input, options);
+	const { url, query, fragmentIdentifier } = parseUrl(input, options);
 
-	return stringifyUrl({
-		url,
-		query: includeKeys(query, filter),
-		fragmentIdentifier,
-	}, options);
+	return stringifyUrl(
+		{
+			url,
+			query: includeKeys(query, filter),
+			fragmentIdentifier,
+		},
+		options,
+	);
 }
 
 export function exclude(input, filter, options) {
-	const exclusionFilter = Array.isArray(filter) ? key => !filter.includes(key) : (key, value) => !filter(key, value);
+	const exclusionFilter = Array.isArray(filter)
+		? (key) => !filter.includes(key)
+		: (key, value) => !filter(key, value);
 
 	return pick(input, exclusionFilter, options);
 }
