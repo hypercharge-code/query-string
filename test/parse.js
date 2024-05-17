@@ -724,3 +724,22 @@ test("do not split encoded parts of the query - case 2", (t) => {
 		},
 	);
 });
+test("do not split encoded parts of the query - case 3", (t) => {
+	t.deepEqual(
+		{
+			result: queryString.parse(
+				"fullText=Mercedes%20%7C%7C%20Benz%20%7C%7C%20mod",
+				{
+					arrayFormat: "separator",
+					arrayFormatSeparator: "|",
+					splitEncodedValues: false,
+				},
+			),
+		},
+		{
+			result: {
+				fullText: "Mercedes || Benz || mod",
+			},
+		},
+	);
+});
