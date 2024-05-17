@@ -87,7 +87,14 @@ export type ParseOptions = {
 		//=> {foo: ['1', '2', '3']}
 		```
 	*/
-	readonly arrayFormat?: 'bracket' | 'index' | 'comma' | 'separator' | 'bracket-separator' | 'colon-list-separator' | 'none';
+	readonly arrayFormat?:
+		| "bracket"
+		| "index"
+		| "comma"
+		| "separator"
+		| "bracket-separator"
+		| "colon-list-separator"
+		| "none";
 
 	/**
 	The character used to separate array elements when using `{arrayFormat: 'separator'}`.
@@ -169,10 +176,64 @@ export type ParseOptions = {
 	```
 	*/
 	readonly parseFragmentIdentifier?: boolean;
+
+	/**
+	Used to decide if shouldSplit value of the key.
+
+	@default ,
+	*/
+	readonly splitEncodedValues?: boolean;
+
+	/**
+	If omitted, values of the keys are always splited.
+
+	@default true
+
+	@example
+	```
+	import queryString from 'query-string';
+	
+	const search = "fullText=Mercedes%20%7C%7C%20Benz%20%7C%7C%20mod";
+
+	queryString.parse(
+				search,
+				{
+					arrayFormat: "separator",
+					arrayFormatSeparator: "|",
+					splitEncodedValues: false,
+				},
+			),
+	//=> fullText: "Mercedes || Benz || mod"
+	```
+
+	@example
+	```
+	import queryString from 'query-string';
+
+	queryString.parse(
+				search,
+				{
+					arrayFormat: "separator",
+					arrayFormatSeparator: "|",
+					splitEncodedValues: true,
+				},
+			),
+	//=> fullText: [
+         'Mercedes ',
+         '',
+         ' Benz ',
+         '',
+         ' mod',
+       ],
+	```
+	*/
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export type ParsedQuery<T = string> = Record<string, T | null | Array<T | null>>;
+export type ParsedQuery<T = string> = Record<
+	string,
+	T | null | Array<T | null>
+>;
 
 /**
 Parse a query string into an object. Leading `?` or `#` are ignored, so you can pass `location.search` or `location.hash` directly.
@@ -181,9 +242,18 @@ The returned object is created with [`Object.create(null)`](https://developer.mo
 
 @param query - The query string to parse.
 */
-export function parse(query: string, options: {parseBooleans: true; parseNumbers: true} & ParseOptions): ParsedQuery<string | boolean | number>;
-export function parse(query: string, options: {parseBooleans: true} & ParseOptions): ParsedQuery<string | boolean>;
-export function parse(query: string, options: {parseNumbers: true} & ParseOptions): ParsedQuery<string | number>;
+export function parse(
+	query: string,
+	options: { parseBooleans: true; parseNumbers: true } & ParseOptions,
+): ParsedQuery<string | boolean | number>;
+export function parse(
+	query: string,
+	options: { parseBooleans: true } & ParseOptions,
+): ParsedQuery<string | boolean>;
+export function parse(
+	query: string,
+	options: { parseNumbers: true } & ParseOptions,
+): ParsedQuery<string | number>;
 export function parse(query: string, options?: ParseOptions): ParsedQuery;
 
 export type ParsedUrl = {
@@ -322,7 +392,14 @@ export type StringifyOptions = {
 		//=> 'foo=1&foo=2&foo=3'
 		```
 	*/
-	readonly arrayFormat?: 'bracket' | 'index' | 'comma' | 'separator' | 'bracket-separator' | 'colon-list-separator' | 'none';
+	readonly arrayFormat?:
+		| "bracket"
+		| "index"
+		| "comma"
+		| "separator"
+		| "bracket-separator"
+		| "colon-list-separator"
+		| "none";
 
 	/**
 	The character used to separate array elements when using `{arrayFormat: 'separator'}`.
@@ -412,11 +489,17 @@ export type StringifyOptions = {
 	readonly skipEmptyString?: boolean;
 };
 
-export type Stringifiable = string | boolean | number | bigint | null | undefined; // eslint-disable-line @typescript-eslint/ban-types
+export type Stringifiable =
+	| string
+	| boolean
+	| number
+	| bigint
+	| null
+	| undefined; // eslint-disable-line @typescript-eslint/ban-types
 
 export type StringifiableRecord = Record<
-string,
-Stringifiable | readonly Stringifiable[]
+	string,
+	Stringifiable | readonly Stringifiable[]
 >;
 
 /**
@@ -429,7 +512,7 @@ export function stringify(
 	// Context: https://github.com/sindresorhus/query-string/issues/298
 	// object: StringifiableRecord,
 	object: Record<string, any>,
-	options?: StringifyOptions
+	options?: StringifyOptions,
 ): string;
 
 /**
@@ -480,7 +563,7 @@ queryString.stringifyUrl({
 */
 export function stringifyUrl(
 	object: UrlObject,
-	options?: StringifyOptions
+	options?: StringifyOptions,
 ): string;
 
 /**
@@ -504,22 +587,23 @@ queryString.pick('https://foo.bar?foo=1&bar=2#hello', (name, value) => value ===
 export function pick(
 	url: string,
 	keys: readonly string[],
-	options?: ParseOptions & StringifyOptions
+	options?: ParseOptions & StringifyOptions,
 ): string;
 export function pick(
 	url: string,
 	filter: (key: string, value: string | boolean | number) => boolean,
-	options?: {parseBooleans: true; parseNumbers: true} & ParseOptions & StringifyOptions
+	options?: { parseBooleans: true; parseNumbers: true } & ParseOptions &
+		StringifyOptions,
 ): string;
 export function pick(
 	url: string,
 	filter: (key: string, value: string | boolean) => boolean,
-	options?: {parseBooleans: true} & ParseOptions & StringifyOptions
+	options?: { parseBooleans: true } & ParseOptions & StringifyOptions,
 ): string;
 export function pick(
 	url: string,
 	filter: (key: string, value: string | number) => boolean,
-	options?: {parseNumbers: true} & ParseOptions & StringifyOptions
+	options?: { parseNumbers: true } & ParseOptions & StringifyOptions,
 ): string;
 
 /**
@@ -543,20 +627,21 @@ queryString.exclude('https://foo.bar?foo=1&bar=2#hello', (name, value) => value 
 export function exclude(
 	url: string,
 	keys: readonly string[],
-	options?: ParseOptions & StringifyOptions
+	options?: ParseOptions & StringifyOptions,
 ): string;
 export function exclude(
 	url: string,
 	filter: (key: string, value: string | boolean | number) => boolean,
-	options?: {parseBooleans: true; parseNumbers: true} & ParseOptions & StringifyOptions
+	options?: { parseBooleans: true; parseNumbers: true } & ParseOptions &
+		StringifyOptions,
 ): string;
 export function exclude(
 	url: string,
 	filter: (key: string, value: string | boolean) => boolean,
-	options?: {parseBooleans: true} & ParseOptions & StringifyOptions
+	options?: { parseBooleans: true } & ParseOptions & StringifyOptions,
 ): string;
 export function exclude(
 	url: string,
 	filter: (key: string, value: string | number) => boolean,
-	options?: {parseNumbers: true} & ParseOptions & StringifyOptions
+	options?: { parseNumbers: true } & ParseOptions & StringifyOptions,
 ): string;
